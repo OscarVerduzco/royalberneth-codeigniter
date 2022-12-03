@@ -67,7 +67,9 @@ $routes->group('api',['namespace' => 'App\Controllers\API'], function($routes) {
     $routes->post('producto/agregarStock', 'Producto::agregarStock');
     
     /*Rutas Login*/
-    $routes->post('usuario/validarLogin', 'Usuario::validarLogin');
+    $routes->post('user/login', 'User::login');
+
+    $routes->get('user', 'User::index');
     
 });
 
