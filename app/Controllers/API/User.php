@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Controllers\API;
+//import user
+use App\Models\UserModel;
 
 use CodeIgniter\RESTful\ResourceController;
 
@@ -36,21 +38,27 @@ class User extends ResourceController
     //Function to login creates a token for the user and returns the complete user data 
     public function login()
     {
-        $data = $this->request->getJSON();
-        
-        $user = $this->model->where('username', $data['username'])->first();
-        
-        if ($user) {
-            if ($user->password == $data['password']) {
-                $token = bin2hex(random_bytes(64));
-                $this->model->set('apiToken', $token)->where('id', $user->id)->update();
-                $user->apiToken = $token;
-                return $this->genericResponse($user, NULL, 200);
+        try{
+
+            $data = $this->request->getJSON();
+            
+            $user = $this->model->where('username', $data->username)->first();
+            
+            if ($user) {
+                if ($user['password'] == $data->password) {
+                    $token = bin2hex(random_bytes(64));
+                    $this->model->set('apiToken', $token)->where('id', $user['id'])->update();
+                    $user['apiToken'] = $token;
+                    return $this->genericResponse($user, NULL, 200);
+                } else {
+                    return $this->genericResponse(NULL, "Wrong password", 400);
+                }
             } else {
-                return $this->genericResponse(NULL, "Wrong password", 400);
+                return $this->genericResponse(NULL, "User not found", 400);
             }
-        } else {
-            return $this->genericResponse(NULL, "User not found", 400);
+        }catch(Exception $e){
+            $message=$e->getMessage();
+            return $this->genericResponse($message, "Error", 400);
         }
     }
 
