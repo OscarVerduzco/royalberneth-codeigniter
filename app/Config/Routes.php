@@ -32,6 +32,11 @@ $routes->setAutoRoute(true);
 // We get a performance increase by specifying the default
 // route since we don't have to scan directories.
 $routes->get('/', 'Home::index');
+
+// Stripe routes
+$routes->get('stripe', 'Stripe::stripe');
+$routes->post('payment', 'Stripe::payment');
+
 $routes->group('api',['namespace' => 'App\Controllers\API'], function($routes) {
     /*RUTAS DE PROVEEDOR */
     $routes->get('proveedor', 'Proveedor::index');
@@ -69,7 +74,20 @@ $routes->group('api',['namespace' => 'App\Controllers\API'], function($routes) {
     /*Rutas Login*/
     $routes->post('user/login', 'User::login');
 
+    // Routes for the User controller
     $routes->get('user', 'User::index');
+    $routes->post('user/singin', 'User::singin');
+    $routes->post('user/updateuser', 'User::updateuser');
+    $routes->post('user/deleteuser', 'User::deleteuser');
+
+    // Routes for properties
+    $routes->get('property', 'Property::index');
+    $routes->post('property/create', 'Property::create');
+    $routes->post('property/getid', 'Property::getid');
+    $routes->get('property/getall', 'Property::getall');
+    $routes->post('property/updatedata', 'Property::updatedata');
+    $routes->post('property/updatefiles', 'Property::updatefiles');
+    
     
 });
 
@@ -89,5 +107,5 @@ $routes->group('api',['namespace' => 'App\Controllers\API'], function($routes) {
  * */
  
 if(file_exists(APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php')) {
-    require APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php';
+    require APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php'; 
 }

@@ -45,7 +45,9 @@ class User extends ResourceController
             $user = $this->model->where('username', $data->username)->first();
             
             if ($user) {
-                if ($user['password'] == $data->password) {
+                $verify_pass = password_verify($data->password, $user['password']);
+
+                if ($user['password'] == $verify_pass) {
                     $token = bin2hex(random_bytes(64));
                     $this->model->set('apiToken', $token)->where('id', $user['id'])->update();
                     $user['apiToken'] = $token;
@@ -63,25 +65,81 @@ class User extends ResourceController
     }
 
     // Function to register a new user
-    public function register(){
+    public function singin(){
         $data = $this->request->getJSON();
-        $user = $this->model->where('username', $data['username'])->first();
+        $user = $this->model->where('username', $data->username)->first();
         if ($user) {
             return $this->genericResponse(NULL, "User already exists", 400);
         } else {
+            // Encrypt password
+            $data->password = password_hash($data->password, PASSWORD_DEFAULT);
+            // Validate type 
+            if(empty($data->type)){
+                return $this->genericResponse(NULL, "User type is required", 400);
+            }
+            // Validate email
+            if(empty($data->email)){
+                return $this->genericResponse(NULL, "User email is required", 400);
+            }
+            // Check tipe of user
+            if($data->type == "admin"){
+                $data->type = 1;
+            }
+            else if($data->type == "client"){
+                $data->type = 2;
+            }
+            else if($data->type == "owner"){
+                $data->type = 3;
+            }
+            else{
+                return $this->genericResponse(NULL, "User type is not valid", 400);
+            }
+            // TODO HERE IS NEED TO VALIDATE ZIP CODE ONLY ACCETED 5 DIGITS AND ONLY ZIP CODE FROM lEON GTO
+            // Validate zip code
+            if(empty($data->zipCode)){
+                return $this->genericResponse(NULL, "User zip code is required", 400);
+            }            
+            $data->status = 1;
+            
             $this->model->save($data);
-            return $this->genericResponse($this->model->where('username', $data['username'])->first(), NULL, 200);
+            return $this->genericResponse($this->model->where('username', $data->username)->first(), NULL, 200);
         }
     }
 
     // Function to update user data
-    public function update($id = null)
+    public function updateuser()
     {
         $data = $this->request->getJSON();
-        $user = $this->model->where('id', $id)->first();
+        $user = $this->model->where('id', $data->id)->first();
         if ($user) {
-            $this->model->set($data)->where('id', $id)->update();
-            return $this->genericResponse($this->model->where('id', $id)->first(), NULL, 200);
+            // validate user data 
+            
+            if(isset($data->type)){
+                unset($data->type);
+            }
+            if(isset($data->status)){
+                unset($data->status);
+            }
+            $data->password = password_hash($data->password, PASSWORD_DEFAULT);
+            $data->type = $user['type'];
+
+            // TODO HERE IS NEED TO VALIDATE ZIP CODE ONLY ACCETED 5 DIGITS AND ONLY ZIP CODE FROM lEON GTO           
+              
+            $this->model->update($data->id, $data);
+            return $this->genericResponse($this->model->where('id', $data->id)->first(), NULL, 200);
+        } else {
+            return $this->genericResponse(NULL, "User not found", 400);
+        }
+    }
+
+    // Function to delete user
+    public function deleteuser()
+    {
+        $data = $this->request->getJSON();
+        $user = $this->model->where('id', $data->id)->first();
+        if ($user) {
+            $this->model->update($data->id, array('status' => 0));
+            return $this->genericResponse(NULL, "User deleted", 200);
         } else {
             return $this->genericResponse(NULL, "User not found", 400);
         }
