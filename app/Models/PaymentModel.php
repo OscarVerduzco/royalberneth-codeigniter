@@ -7,7 +7,16 @@ class PaymentModel extends Model
 {
     protected $table = 'payment';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['date','amount','reservationId','typePayment'];
+    protected $allowedFields = ['date',
+                                'amount',
+                                'reservationId',
+                                'typePayment', 
+                                'transactionId', 
+                                'gateway',
+                                'receiptUrl',
+                                'status'
+
+                            ];
     
     protected $useTimeStamps = true;
     

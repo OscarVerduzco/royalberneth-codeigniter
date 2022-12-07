@@ -1,6 +1,8 @@
 <?php
 
-class Stripe  
+namespace App\Libraries;
+
+class StripeLib
 {
     private $stripe_id = null;
 	private $public_key = null; //placeholders
@@ -44,23 +46,16 @@ class Stripe
 				return $data['id']; // token
 			}
 		} catch (Exception $e) {
-			log_message('ERROR',  $e->getMessage());
+			log_message('DEBUG', 'Stripe: ' . $e->getMessage());
 			return null;
 		}
 
 		return null;
 	}
 
-    public function charge($data, $params)
+    public function charge($data)
     {
-        log_message('DEBUG', ''.json_encode($params));
-		if($params){
-			foreach($params as $key => $value){
-				$this->$key = $value;
-			}
-		}
-
-
+        
 		$result = array();
 		$result['status_code'] = -1;
 		$result['auth_code'] = null;
@@ -68,6 +63,10 @@ class Stripe
 		$result['merchant_date'] = null;
 		$result['mode'] = $this->mode;
 		$result['merchant'] = 'Stripe-Card';
+
+		// Parse data to array
+		$data = (array) $data;
+
 
         if(!array_key_exists('phone', $data)) { $data['phone'] = '+525551111111'; }
 		if(!array_key_exists('street1', $data)) { $data['street1'] = 'No aplicable'; }
@@ -111,17 +110,17 @@ class Stripe
             ];
 
             $idempotencyRequest = [];
+			// Create a idempotency key to avoid duplicate charges
+			$data['idempotency'] = uniqid();			
 
 			if(isset($data['idempotency']))
 				$idempotencyRequest = ['idempotency_key' => $data['idempotency']];
-
 
 			$stripe = new \Stripe\StripeClient(
 				$this->private_key
 			);
 
 			$order = $stripe->charges->create($chargeRequest, $idempotencyRequest);
-			log_message('DEBUG','Charge Request: ' . json_encode($order));
 
 			if($order->id)
 			{
@@ -152,8 +151,19 @@ class Stripe
 
         }catch(Exception $e)
         {
-            log_message('ERROR',  $e->getMessage());
+			$result = array();
+			$result['status_code'] = -1;
+			$result['auth_code'] = null;
+			$result['message'] = 'Error en procesamiento';
+			$result['merchant_date'] = null;
+			$result['mode'] = $this->mode;
+			$result['merchant'] = 'Stripe-Card';
+			$result['body_sent'] = $chargeRequest;
+			$result['body_result'] = $e->getMessage();
+			
         }
+
+		return $result;
 
     }
 

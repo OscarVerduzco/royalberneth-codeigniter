@@ -7,7 +7,13 @@ class ReservationModel extends Model
 {
     protected $table = 'reservation';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['propertyId','dateStart','dateEnd','dateReservation','totalPrice','status'];
+    protected $allowedFields = ['propertyId',
+                                'userId',
+                                'dateStart',
+                                'dateEnd',
+                                'dateReservation',
+                                'totalPrice',
+                                'status'];
     
     protected $useTimeStamps = true;
     
