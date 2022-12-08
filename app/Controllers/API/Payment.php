@@ -43,7 +43,7 @@ class Property extends ResourceController
         //  create token
         $result = $this->stripe->charge($data, $params);
 
-        
+                
 
 
     }

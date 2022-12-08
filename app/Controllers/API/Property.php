@@ -201,6 +201,7 @@ class Property extends ResourceController
             $detailProperty = new DetailPropertyTypeModel();
             $propertyTypeModel = new PropertyTypeModel();
             $property = $this->request->getJSON();
+            
             $propertyId = $property->id;
 
             $p = $this->model->find($propertyId);
@@ -304,6 +305,32 @@ class Property extends ResourceController
 
           
 
+            $message=$e->getMessage();
+            return $this->genericResponse(NULL, $message, 400);
+        }
+    }
+
+
+    // Function to get properties by user
+    public function getbyuser()
+    {
+        try{
+            $userId = $this->request->getPOST('userId');
+            $properties = $this->model->where('userId',$userId)->findAll();
+            $images = new PropertyImagesModel();
+            $detailProperty = new DetailPropertyTypeModel();
+            $propertyType = new PropertyTypeModel();
+            foreach($properties as &$property){
+                $property['images'] = $images->where('propertyId',$property['id'])->findAll();
+                $types = $detailProperty->where('propertyId',$property['id'])->findAll();
+                
+                $property['types'] = array();
+                foreach($types as $type){
+                    $property['types'][] = $propertyType->find($type['propertyTypeId'])['type'];
+                }
+            }
+            return $this->genericResponse($properties, NULL, 200);
+        }catch(Exception $e){
             $message=$e->getMessage();
             return $this->genericResponse(NULL, $message, 400);
         }

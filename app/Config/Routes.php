@@ -87,10 +87,13 @@ $routes->group('api',['namespace' => 'App\Controllers\API'], function($routes) {
     $routes->get('property/getall', 'Property::getall');
     $routes->post('property/updatedata', 'Property::updatedata');
     $routes->post('property/updatefiles', 'Property::updatefiles');
+    $routes->post('property/getbyuser', 'Property::getbyuser');
 
     // Routes for Reservations
     $routes->get('reservation', 'Reservation::index');
     $routes->post('reservation/create', 'Reservation::create');
+    $routes->post('reservation/checkavailability', 'Reservation::checkavailability');
+    $routes->post('reservation/createPreReservation', 'Reservation::createPreReservation');
     
     
 });
