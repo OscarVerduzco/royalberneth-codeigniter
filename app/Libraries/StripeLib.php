@@ -16,7 +16,7 @@ class StripeLib
         $this->private_key = 'sk_test_51MBrncI2BmcpI70CyM3m0pgSt8CdDFuNaHI22Gjiyv7nulWNJ7CYlNeEgRLeuqwyV67uVQAoDjGzxF0YJrTwTT4E00uApMiII0';
         $this->public_key = 'pk_test_51MBrncI2BmcpI70CPTPDYTxRjZh1CYwbcy8TSWJi6b7qFwlBHLvD8x4zYSVYoxve5U3yjBPqbn46qFyrp0MRL38700TgYVSszc';
     }
-    
+    // Token stripe
     public function create_token($data)
 	{
 		try {
@@ -52,7 +52,7 @@ class StripeLib
 
 		return null;
 	}
-
+	//Stripe charge 
     public function charge($data)
     {
         
@@ -166,5 +166,50 @@ class StripeLib
 		return $result;
 
     }
+
+	public function refund($data)
+	{
+		$result = array();
+		$result['status_code'] = -1;
+		$result['auth_code'] = null;
+		$result['message'] = 'Error en procesamiento';
+		$result['merchant_date'] = null;
+		$result['mode'] = $this->mode;
+		$result['merchant'] = 'Stripe-Card';
+
+		// Parse data to array
+		$data = (array) $data;
+
+		try
+		{
+			$stripe = new \Stripe\StripeClient(
+				$this->private_key
+			);
+
+			$refund = $stripe->refunds->create([
+				'charge' => $data['transaction_id'],
+				'reason' => 'requested_by_customer',
+				'metadata' => ['gateway' => 'stripe'],
+			]);
+
+			if($refund->id)
+			{
+				$result['transaction_id'] = $refund->id;
+				$result['status_code'] = 1;
+				$result['message'] = "Reembolso completado con éxito";
+				$result['auth_code'] = $refund->id;
+				$result['merchant_date'] = date('Y-m-d H:i:s', $refund->created);//date('Y-m-d H:i:s');
+				$result['body_sent'] = $data;
+				$result['body_result'] = $refund;
+			}
+		} catch (Exception $e) {
+			log_message('DEBUG', 'Stripe: ' . $e->getMessage());
+			$result['body_result'] = $e->getMessage();
+		}
+
+		return $result;
+	}
+
+	
 
 }

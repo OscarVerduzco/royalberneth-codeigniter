@@ -168,6 +168,34 @@ class Property extends ResourceController
         }
     }
 
+    // Function to consult a property by id
+    public function getbyid($propertyId)
+    {
+        try{
+            
+            $images = new PropertyImagesModel();
+            $detailProperty = new DetailPropertyTypeModel();
+            $propertyType = new PropertyTypeModel();
+            $property = $this->model->find(intval($propertyId));
+            $property['images'] = $images->where('propertyId',$propertyId)->findAll();
+            $types = $detailProperty->where('propertyId',$propertyId)->findAll();
+            
+            $property['types'] = array();
+            foreach($types as $type){
+                $property['types'][] = $propertyType->find($type['propertyTypeId'])['type'];
+            }
+                    
+            if($property){
+                return $property;
+            }else{
+                return NULL;
+            }
+        }catch(Exception $e){
+            $message=$e->getMessage();
+            return $e.getMessage();
+        }
+    }
+
     // Function to get all properties
     public function getall()
     {
@@ -317,6 +345,91 @@ class Property extends ResourceController
         try{
             $userId = $this->request->getPOST('userId');
             $properties = $this->model->where('userId',$userId)->findAll();
+            $images = new PropertyImagesModel();
+            $detailProperty = new DetailPropertyTypeModel();
+            $propertyType = new PropertyTypeModel();
+            foreach($properties as &$property){
+                $property['images'] = $images->where('propertyId',$property['id'])->findAll();
+                $types = $detailProperty->where('propertyId',$property['id'])->findAll();
+                
+                $property['types'] = array();
+                foreach($types as $type){
+                    $property['types'][] = $propertyType->find($type['propertyTypeId'])['type'];
+                }
+            }
+            return $this->genericResponse($properties, NULL, 200);
+        }catch(Exception $e){
+            $message=$e->getMessage();
+            return $this->genericResponse(NULL, $message, 400);
+        }
+    }
+
+    // Function to delete a property updating status to 0
+    public function deleteproperty()
+    {
+        try{
+            $propertyId = $this->request->getPOST('id');
+            $p = $this->model->find($propertyId);
+            if($p){
+                $this->model->update($propertyId, ['status' => 0]);
+                return $this->genericResponse($propertyId, NULL, 200);
+            }else{
+                return $this->genericResponse(NULL, "No existe la propiedad", 400);
+            }
+        }catch(Exception $e){
+            $message=$e->getMessage();
+            return $this->genericResponse(NULL, $message, 400);
+        }
+    }
+    
+
+    // Function to get properties with status 0
+    public function getdeleted()
+    {
+        try{
+            $properties = $this->model->where('status',0)->findAll();
+            $images = new PropertyImagesModel();
+            $detailProperty = new DetailPropertyTypeModel();
+            $propertyType = new PropertyTypeModel();
+            foreach($properties as &$property){
+                $property['images'] = $images->where('propertyId',$property['id'])->findAll();
+                $types = $detailProperty->where('propertyId',$property['id'])->findAll();
+                
+                $property['types'] = array();
+                foreach($types as $type){
+                    $property['types'][] = $propertyType->find($type['propertyTypeId'])['type'];
+                }
+            }
+            return $this->genericResponse($properties, NULL, 200);
+        }catch(Exception $e){
+            $message=$e->getMessage();
+            return $this->genericResponse(NULL, $message, 400);
+        }
+    }
+
+    // Function to restore a property updating status to 1
+    public function restore()
+    {
+        try{
+            $propertyId = $this->request->getPOST('id');
+            $p = $this->model->find($propertyId);
+            if($p){
+                $this->model->update($propertyId, ['status' => 1]);
+                return $this->genericResponse($propertyId, NULL, 200);
+            }else{
+                return $this->genericResponse(NULL, "No existe la propiedad", 400);
+            }
+        }catch(Exception $e){
+            $message=$e->getMessage();
+            return $this->genericResponse(NULL, $message, 400);
+        }
+    }
+
+    // Function to get properties with status 1
+    public function getactive()
+    {
+        try{
+            $properties = $this->model->where('status',1)->findAll();
             $images = new PropertyImagesModel();
             $detailProperty = new DetailPropertyTypeModel();
             $propertyType = new PropertyTypeModel();

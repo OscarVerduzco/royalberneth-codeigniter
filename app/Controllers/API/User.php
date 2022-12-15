@@ -120,8 +120,13 @@ class User extends ResourceController
             if(isset($data->status)){
                 unset($data->status);
             }
-            $data->password = password_hash($data->password, PASSWORD_DEFAULT);
-            $data->type = $user['type'];
+            if(isset($data->password)){
+                unset($data->password);
+            }
+            if(isset($data->username)){
+                unset($data->username);
+            }
+            
 
             // TODO HERE IS NEED TO VALIDATE ZIP CODE ONLY ACCETED 5 DIGITS AND ONLY ZIP CODE FROM lEON GTO           
               
@@ -144,6 +149,42 @@ class User extends ResourceController
             return $this->genericResponse(NULL, "User not found", 400);
         }
     }
+
+    // Function to get user by id
+    public function getuser()
+    {
+        $data = $this->request->getJSON();
+        $user = $this->model->where('id', $data->id)->first();
+        if ($user) {
+            return $this->genericResponse($user, NULL, 200);
+        } else {
+            return $this->genericResponse(NULL, "User not found", 400);
+        }
+    }
+
+    // Function to get users with status 0
+    public function getusersdeleted()
+    {
+        $users = $this->model->where('status', 0)->findAll();
+        if ($users) {
+            return $this->genericResponse($users, NULL, 200);
+        } else {
+            return $this->genericResponse(NULL, "Users not found", 400);
+        }
+    }
+
+    // Function to get users with status 1
+    public function getusersactive()
+    {
+        $users = $this->model->where('status', 1)->findAll();
+        if ($users) {
+            return $this->genericResponse($users, NULL, 200);
+        } else {
+            return $this->genericResponse(NULL, "Users not found", 400);
+        }
+    }
+
+
 
    
 

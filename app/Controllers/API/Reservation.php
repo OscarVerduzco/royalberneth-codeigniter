@@ -6,6 +6,13 @@ use CodeIgniter\RESTful\ResourceController;
 use App\Models\ReservationModel;
 use App\Libraries\StripeLib;
 Use App\Models\PaymentModel;
+// import property controller
+use App\Controllers\API\Property;
+use App\Models\PropertyModel;
+use App\Models\PropertyTypeModel;
+use App\Models\DetailPropertyTypeModel;
+use App\Models\PropertyImagesModel;
+use App\Models\UserModel;
 
 
 class Reservation extends ResourceController
@@ -31,6 +38,33 @@ class Reservation extends ResourceController
             ));
  		}
 	}
+
+    // index
+    public function index()
+    {
+        return $this->genericResponse($this->model->findAll(), NULL, 200);
+    }
+
+    //Get all reservation
+    public function getall()
+    {
+        try {
+            $reservations = $this->model->findAll();
+            // Get name of user
+            $userModel = new UserModel();
+            $propertyModel = new PropertyModel();
+            
+            foreach ($reservations as $key => $value) {
+                $user = $userModel->where('id', $value['userId'])->first();
+                $property = $propertyModel->where('id', $value['propertyId'])->first();
+                $reservations[$key]['userName'] = $user['name'];
+                $reservations[$key]['propertyName'] = $property['name'];
+            }
+            return $this->genericResponse($reservations, NULL, 200);
+        } catch (Exception $th) {
+            return $this->genericResponse(null, "Error getting reservations", 500);
+        }
+    }
 
 
     // Function to create a reservation
@@ -77,7 +111,7 @@ class Reservation extends ResourceController
 
                 $paymentModel = new PaymentModel();
                 $paymentModel->insert($payment);              
-                return $this->genericResponse(null, $token['message'] . ", Se a ha guardado la reservacion! congratulations, gg diff profes qlos", 200);
+                return $this->genericResponse(null, $token['message'] . ", Se a ha guardado la reservacion!", 200);
             } else {
                 
                 return $this->genericResponse(null, "Error", 500);
@@ -170,25 +204,146 @@ class Reservation extends ResourceController
     public function getReservationsByUser()
     {
         try {
-            $id = $this->request->getJSON('userId');
+            $propertyController = new Property();
+            
+            $id = $this->request->getPOST('userId');
             $reservations = $this->model->where('userId', $id)->findAll();
+            // add property info
+            
+
+            foreach ($reservations as $key => $value) {
+               
+                $property = $this->getProperty($value['propertyId']);
+                
+                $reservations[$key]['property'] = $property;
+            }
+
             return $this->genericResponse($reservations, "Reservations found", 200);
         } catch (Exception $th) {
             return $this->genericResponse(null, "Error getting reservations", 500);
         }
     }
 
+ 
+
+
+
+
     // Function to get dates reserved of a property
-    public function getDatesReservedByProperty()
+    public function getReservationsByProperty()
     {
         try {
-            $id = $this->request->getJSON('propertyId');
+            $id = $this->request->getPOST('propertyId');
             $reservations = $this->model->where('propertyId', $id)->findAll();
             return $this->genericResponse($reservations, "Dates reserved found", 200);
         } catch (Exception $th) {
             return $this->genericResponse(null, "Error getting dates reserved", 500);
         }
     }
+
+    public function getProperty($propertyId)
+    {
+        
+        try{
+            
+            $pro = new PropertyModel();
+            $images = new PropertyImagesModel();
+            $detailProperty = new DetailPropertyTypeModel();
+            $propertyType = new PropertyTypeModel();
+            $property = $pro->find(intval($propertyId));
+            $property['images'] = $images->where('propertyId',$propertyId)->findAll();
+            $types = $detailProperty->where('propertyId',$propertyId)->findAll();
+            
+            $property['types'] = array();
+            foreach($types as $type){
+                $property['types'][] = $propertyType->find($type['propertyTypeId'])['type'];
+            }
+                    
+            if($property){
+                
+                return $property;
+            }else{
+                return NULL;
+            }
+        }catch(Exception $e){
+            $message=$e->getMessage();
+            return $e.getMessage();
+        }
+    }
+
+    // Function to get the reservations of a property
+    public function getReservationsByPropertyId()
+    {
+        try {
+            $id = $this->request->getPOST('propertyId');
+            $reservations = $this->model->where('propertyId', $id)->findAll();
+            return $this->genericResponse($reservations, "Reservations found", 200);
+        } catch (Exception $th) {
+            return $this->genericResponse(null, "Error getting reservations", 500);
+        }
+    }
+
+    // Function to get the reservations by user owner of a property
+    public function getReservationsByUserOwner()
+    {
+        try {
+            $ownerId = $this->request->getPOST('userId');
+            $propertyModel = new PropertyModel();
+            $user  = new UserModel();
+            $payment = new PaymentModel();
+            $reservations = [];
+            $properties = $propertyModel->where('userId', $ownerId)->findAll();
+
+            // Create query that joins the reservations with the properties of the user
+            foreach ($properties as $key => $value) {
+                $reservations = array_merge($reservations, $this->model->where('propertyId', $value['id'])->findAll());
+                
+            }
+
+            foreach ($reservations as $key => $value) {
+                $u = $user->find($value['userId']);
+                $reservations[$key]['user']['name'] = $u['name']." ".$u['lastname'];
+                $reservations[$key]['user']['email'] = $u['email'];
+                $reservations[$key]['user']['phone'] = $u['phone'];
+
+                $reservations[$key]['property'] = $propertyModel->find($value['propertyId'])['name'];
+                $reservations[$key]['payment'] = $payment->where('reservationId', $value['id'])->first();
+            }
+
+            return $this->genericResponse($reservations, "Reservations found", 200);
+        } catch (Exception $th) {
+            return $this->genericResponse(null, "Error getting reservations", 500);
+        }
+    }
+
+
+    // Function to get reservation by id
+    public function getReservationById()
+    {
+        try {
+            $propertyModel = new PropertyModel();
+            $user  = new UserModel();
+            $payment = new PaymentModel();
+            $id = $this->request->getPOST('reservationId');
+            $reservation = $this->model->find($id);
+            if(!$reservation){
+                return $this->genericResponse(null, "Reservation not found", 404);
+            }
+            $u = $user->find($reservation['userId']);
+            $reservation['user']['name'] = $u['name']." ".$u['lastname'];
+            $reservation['user']['email'] = $u['email'];
+            $reservation['user']['phone'] = $u['phone'];
+
+            $reservation['property'] = $this->getProperty($reservation['propertyId']);
+
+            $reservation['payment'] = $payment->where('reservationId', $reservation['id'])->first();
+            
+            return $this->genericResponse($reservation, "Reservation found", 200);
+        } catch (Exception $th) {
+            return $this->genericResponse(null, "Error getting reservation", 500);
+        }
+    }
+
 
 }
 

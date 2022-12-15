@@ -79,6 +79,9 @@ $routes->group('api',['namespace' => 'App\Controllers\API'], function($routes) {
     $routes->post('user/singin', 'User::singin');
     $routes->post('user/updateuser', 'User::updateuser');
     $routes->post('user/deleteuser', 'User::deleteuser');
+    $routes->post('user/getbyid', 'User::getbyid');
+    $routes->get('user/getusersdeleted', 'User::getusersdeleted');
+    $routes->get('user/getusersactive', 'User::getusersactive');
 
     // Routes for properties
     $routes->get('property', 'Property::index');
@@ -88,12 +91,23 @@ $routes->group('api',['namespace' => 'App\Controllers\API'], function($routes) {
     $routes->post('property/updatedata', 'Property::updatedata');
     $routes->post('property/updatefiles', 'Property::updatefiles');
     $routes->post('property/getbyuser', 'Property::getbyuser');
+    $routes->get('property/getdeleted', 'Property::getdeleted');
+    $routes->post('property/restore', 'Property::restore');
+    $routes->get('property/getactive', 'Property::getactive');
+    $routes->post('property/deleteproperty', 'Property::deleteproperty');
 
     // Routes for Reservations
     $routes->get('reservation', 'Reservation::index');
+    $routes->get('reservation/getall', 'Reservation::getall');
+
     $routes->post('reservation/create', 'Reservation::create');
     $routes->post('reservation/checkavailability', 'Reservation::checkavailability');
     $routes->post('reservation/createPreReservation', 'Reservation::createPreReservation');
+    $routes->post('reservation/getReservationsByUser', 'Reservation::getReservationsByUser');
+    $routes->post('reservation/getReservationsByProperty', 'Reservation::getReservationsByProperty');
+    $routes->post('reservation/getReservationsByUserOwner', 'Reservation::getReservationsByUserOwner');
+    $routes->post('reservation/getReservationById', 'Reservation::getReservationById');
+
     
     
 });
