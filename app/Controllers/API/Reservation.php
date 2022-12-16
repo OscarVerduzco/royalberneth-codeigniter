@@ -344,6 +344,27 @@ class Reservation extends ResourceController
         }
     }
 
+    // Cancel a reservation
+    public function cancel_reservation()
+    {
+        try {
+            $id = $this->request->getPOST('reservationId');
+            $payment = new PaymentModel();
+            $reservation = $this->model->find($id);
+            if(!$reservation){
+                return $this->genericResponse(null, "Reservation not found", 404);
+            }
+        } catch (Exception $th) {
+            return $this->genericResponse(null, "Error getting reservation", 500);
+        }
+
+            
+
+
+
+
+    }
+
 
 }
 
