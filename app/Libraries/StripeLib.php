@@ -179,24 +179,27 @@ class StripeLib
 
 		// Parse data to array
 		$data = (array) $data;
+		
 
 		try
 		{
 			$stripe = new \Stripe\StripeClient(
 				$this->private_key
 			);
-
+			
 			$refund = $stripe->refunds->create([
 				'charge' => $data['transaction_id'],
 				'reason' => 'requested_by_customer',
 				'metadata' => ['gateway' => 'stripe'],
 			]);
+			
 
 			if($refund->id)
 			{
 				$result['transaction_id'] = $refund->id;
-				$result['status_code'] = 1;
+				$result['status'] = 1;
 				$result['message'] = "Reembolso completado con éxito";
+				$result['amount'] = $refund->amount / 100;
 				$result['auth_code'] = $refund->id;
 				$result['merchant_date'] = date('Y-m-d H:i:s', $refund->created);//date('Y-m-d H:i:s');
 				$result['body_sent'] = $data;

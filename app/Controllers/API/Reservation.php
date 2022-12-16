@@ -13,6 +13,7 @@ use App\Models\PropertyTypeModel;
 use App\Models\DetailPropertyTypeModel;
 use App\Models\PropertyImagesModel;
 use App\Models\UserModel;
+use App\Models\CancelationModel;
 
 
 class Reservation extends ResourceController
@@ -207,7 +208,8 @@ class Reservation extends ResourceController
             $propertyController = new Property();
             
             $id = $this->request->getPOST('userId');
-            $reservations = $this->model->where('userId', $id)->findAll();
+            // Get reservations user_id = $id and status = 1
+            $reservations = $this->model->where('userId', $id)->where('status', 1)->findAll();
             // add property info
             
 
@@ -250,9 +252,13 @@ class Reservation extends ResourceController
             $images = new PropertyImagesModel();
             $detailProperty = new DetailPropertyTypeModel();
             $propertyType = new PropertyTypeModel();
+            $owner = new UserModel();
             $property = $pro->find(intval($propertyId));
             $property['images'] = $images->where('propertyId',$propertyId)->findAll();
             $types = $detailProperty->where('propertyId',$propertyId)->findAll();
+            $owner = $owner->find($property['userId']);
+            $property['owner'] = $owner['name'] . " " . $owner['lastname'];
+            $property['phone'] = $owner['phone'];
             
             $property['types'] = array();
             foreach($types as $type){
@@ -292,7 +298,7 @@ class Reservation extends ResourceController
             $user  = new UserModel();
             $payment = new PaymentModel();
             $reservations = [];
-            $properties = $propertyModel->where('userId', $ownerId)->findAll();
+            $properties = $propertyModel->where('userId', $ownerId)->where('status', 1)->findAll();
 
             // Create query that joins the reservations with the properties of the user
             foreach ($properties as $key => $value) {
@@ -345,15 +351,50 @@ class Reservation extends ResourceController
     }
 
     // Cancel a reservation
-    public function cancel_reservation()
+    public function cancelReservation()
     {
         try {
             $id = $this->request->getPOST('reservationId');
-            $payment = new PaymentModel();
+            $reason = $this->request->getPOST('reason');
+            $paymentModel = new PaymentModel();
+            $stripe = new StripeLib();
+            $cancelationModel = new CancelationModel();
+
+
             $reservation = $this->model->find($id);
             if(!$reservation){
                 return $this->genericResponse(null, "Reservation not found", 404);
             }
+            $payment = $paymentModel->where('reservationId', $id)->first();
+           
+
+
+            $response = $stripe->refund(['transaction_id' => $payment['transactionId'], 'reason' => $reason]);
+
+            if($response['status'] == 1){
+                $this->model->update($id, ['status' => -1]);
+                $data = [
+                    'reservationId' => $id,
+                    'cancelationReason' => $reason,
+                    'cancelationDate' => date('Y-m-d H:i:s'),
+                    'transactionId' => $response['transaction_id'],
+                    'amount' => $response['amount'],
+                    'message' => $response['message'],
+                    'authcode' => $response['auth_code'],
+                    'merchantDate' => $response['merchant_date'],
+                    'request' => json_encode($response['body_sent']),
+                    'response' => json_encode($response['body_result']),
+                    'status' => $response['status']                                      
+                ];
+
+                $cancelationModel->insert($data);
+
+                return $this->genericResponse($data, "Reservation cancelled", 200);
+            }else{
+                return $this->genericResponse(null, "Error cancelling reservation", 500);
+            }
+
+
         } catch (Exception $th) {
             return $this->genericResponse(null, "Error getting reservation", 500);
         }
@@ -363,6 +404,17 @@ class Reservation extends ResourceController
 
 
 
+    }
+
+    // get active reservations
+    public function getActiveReservations()
+    {
+        try {
+            $reservations = $this->model->where('status', 1)->findAll();
+            return $this->genericResponse($reservations, "Reservations found", 200);
+        } catch (Exception $th) {
+            return $this->genericResponse(null, "Error getting reservations", 500);
+        }
     }
 
 

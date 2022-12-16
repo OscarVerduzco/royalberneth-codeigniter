@@ -107,7 +107,17 @@ $routes->group('api',['namespace' => 'App\Controllers\API'], function($routes) {
     $routes->post('reservation/getReservationsByProperty', 'Reservation::getReservationsByProperty');
     $routes->post('reservation/getReservationsByUserOwner', 'Reservation::getReservationsByUserOwner');
     $routes->post('reservation/getReservationById', 'Reservation::getReservationById');
+    $routes->post('reservation/cancelReservation', 'Reservation::cancelReservation');
+    $routes->get('reservation/getActiveReservations', 'Reservation::getActiveReservations');
 
+
+    // Payment routes 
+    $routes->get('payment', 'Payment::index');
+    $routes->post('payment/getOwnerEarnings', 'Payment::getOwnerEarnings');
+    $routes->get('payment/getTotalEarnings', 'Payment::getTotalEarnings');
+
+    // Cancelation routes
+    $routes->get('cancelation', 'Cancelation::index');
     
     
 });
